@@ -6,51 +6,64 @@ import numpy as np
 import srt
 
 
-def seconds_to_hhmmss(seconds_duration):
-    hh = int(seconds_duration/3600)
-    mm = int(seconds_duration/60)
-    ss = int(seconds_duration-hh*3600-mm*60)
-    return str("%02d" % hh) + ":" + str("%02d" % mm) + ":" + str("%02d" % ss)
+def time_to_hhmmssmmm(seconds_duration, input_type="miliseconds"):
+    '''
+    Convert a time number into the string format HH:MM:SS:MMM
+    Input types: miliseconds (default), seconds, minutes, hours
+    '''
+    switch_divider = {
+        "miliseconds": 3600000,
+        "seconds": 3600,
+        "minutes": 60,
+        "hours": 1
+    }
+    hours = seconds_duration/switch_divider[input_type]
+    hh = int(hours) # Return value
+    minutes = (hours-hh)*60
+    mm = int(minutes) # Return value
+    seconds = (minutes-mm)*60
+    ss = int(seconds) # Return value
+    miliseconds = (seconds-ss)*1000
+    mmm = int(miliseconds) # Return value
+    return str("%02d" % hh) + ":" + str("%02d" % mm) + ":" + str("%02d" % ss) + "," + str("%03d" % mmm)
 
 
-def ms_to_hhmmssmmm(miliseconds_duration):
-    hh = miliseconds_duration/3600000
-    hours = int(hh)
-    mm = (hh-hours)*60
-    minutes = int(mm)
-    ss = (mm-minutes)*60
-    seconds = int(ss)
-    mmm = (ss-seconds)*1000
-    miliseconds = int(mmm)
-    return str("%02d" % hours) + ":" + str("%02d" % minutes) + ":" + str("%02d" % seconds) + "," + str("%03d" % miliseconds)
-
-
-def get_image_top(cv_frame):
+def get_frame_position(cv_frame, position="bottom"):
+    '''
+    Get a horizontal frinje of an opencv frame.
+    position:
+        bottom (default): lower quarter
+        top: upper quarter
+    '''
     height, _, _ = cv_frame.shape
-    image_bot = cv_frame[:int((height/4)),:]
-    return image_bot
-
-
-def get_image_bot(cv_frame):
-    height, _, _ = cv_frame.shape
-    image_top = cv_frame[int((height/4)*3):,:]
-    return image_top
+    frame_position = ""
+    if position == "bottom":
+        frame_position = cv_frame[int((height/4)*3):,:]
+    if position == "top":
+        frame_position = cv_frame[:int((height/4)),:]
+    return frame_position
 
 
 def frame_processing(cv_frame):
-    image = np.float32(cv_frame)/255
-    height, width, _ = image.shape
+    '''
+    Improve the frame quality through a channels average.
+    '''
+    image = np.float32(cv_frame)/255 # Floating point convertion
+    height, width, _ = image.shape # Image dimensions
 
+    # Channels generation
     image_bgr = image
     image_hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
     image_gs = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
 
+    # Channels average
     channels_list = [image_bgr[:,:,0], image_bgr[:,:,1], image_bgr[:,:,2], image_hsv[:,:,1], image_hsv[:,:,2], image_gs]
     image_avg = np.zeros((height, width), dtype=np.float32)
-    for e in channels_list:
-        image_avg += e
+    for channel in channels_list:
+        image_avg += channel
     image_avg /= len(channels_list)
-    image_avg = np.uint8(image_avg*255)
+
+    image_avg = np.uint8(image_avg*255) # Integer convertion
     image_avg = np.expand_dims(image_avg, axis=2) # Channel adding
 
     # cv2.imshow("Fotograma", image_avg)
@@ -61,7 +74,7 @@ def frame_processing(cv_frame):
 
 
 def video_processing(video_path):
-    ocr_reader = easyocr.Reader(["en", "es"])
+    ocr_reader = easyocr.Reader(["en", "es"]) # EasyOCR reader: English and Español
 
     subtitles_top_path = video_path.split(".")[0] + "_top.srt"
     subtitles_bot_path = video_path.split(".")[0] + "_bot.srt"
@@ -76,14 +89,15 @@ def video_processing(video_path):
     frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     total_duration_seconds = int(frame_count/fps)
     print(colored("Frames per second:", "green"), fps)
-    print(colored("Total duration:", "green"), seconds_to_hhmmss(total_duration_seconds))
+    print(colored("Total duration:", "green"), time_to_hhmmssmmm(total_duration_seconds, input_type="seconds"))
 
     previous_ret, previous_frame = video.read()
     if not previous_ret:
         print(colored("Fin del procesamiento.", "red"))
         return
-    previous_frame_top_processed = frame_processing(get_image_top(previous_frame))
-    previous_frame_bot_processed = frame_processing(get_image_bot(previous_frame))
+        
+    previous_frame_top_processed = frame_processing(get_frame_position(previous_frame, position="top"))
+    previous_frame_bot_processed = frame_processing(get_frame_position(previous_frame, position="bottom"))
     previous_top_txt = " ".join(ocr_reader.readtext(previous_frame_top_processed, detail = 0))
     previous_bot_txt = " ".join(ocr_reader.readtext(previous_frame_bot_processed, detail = 0))
 
@@ -111,8 +125,8 @@ def video_processing(video_path):
         similarity_count_bot += 1
 
     for position in range(1, total_duration_seconds*fps, 1):
-        time = video.get(cv2.CAP_PROP_POS_MSEC)
-        time = ms_to_hhmmssmmm(time)
+        time = video.get(cv2.CAP_PROP_POS_MSEC) # time in miliseconds
+        time = time_to_hhmmssmmm(time)
         print(colored("Frame:", "green"), f"{position}/{total_duration_seconds*fps}", colored("Time:", "green"), time)
         video.set(cv2.CAP_PROP_POS_FRAMES, position)
 
@@ -120,8 +134,8 @@ def video_processing(video_path):
         if not ret:
             print(colored("Fin del procesamiento.", "red"))
             break
-        frame_top_processed = frame_processing(get_image_top(frame))
-        frame_bot_processed = frame_processing(get_image_bot(frame))
+        frame_top_processed = frame_processing(get_frame_position(frame, position="top"))
+        frame_bot_processed = frame_processing(get_frame_position(frame, position="bottom"))
         frame_top_txt = " ".join(ocr_reader.readtext(frame_top_processed, detail = 0))
         frame_bot_txt = " ".join(ocr_reader.readtext(frame_bot_processed, detail = 0))
         print(colored("Top subtitle:", "blue"), frame_top_txt)
@@ -221,8 +235,8 @@ def video_processing(video_path):
 def function_batch(videos_folder):
     return
 
-video_path = "video.avi"
-video_processing(video_path)
+# video_path = "video.avi"
+# video_processing(video_path)
 # video_path = "video.mkv"
 # video_processing(video_path)
 
