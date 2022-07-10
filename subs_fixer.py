@@ -4,6 +4,10 @@ from textblob import TextBlob
 
 
 def subtitles_joiner(subs_top_path, subs_bot_path):
+    '''
+    Join subtitles of top and bottom.
+    '''
+    # Load Subtitles
     srt_top = ""
     with open(subs_top_path, "r", encoding="utf8") as f:
         srt_top = f.read()
@@ -11,20 +15,25 @@ def subtitles_joiner(subs_top_path, subs_bot_path):
     with open(subs_bot_path, "r", encoding="utf8") as f:
         srt_bot = f.read()
     
+    # Merge subtitles
     srt_top_list = list(srt.parse(srt_top))
     srt_bot_list = list(srt.parse(srt_bot))
     srt_list = srt_top_list + srt_bot_list
-
     output = srt.compose(srt_list)
 
+    # Save subtitle
     output_path = "output_joined.srt"
     with open(output_path, "w", encoding="utf8") as f:
         f.write(output)
 
 
 def characters_per_second(time_start, time_end, text):
-    time_delta = (time_end-time_start).total_seconds()
-    characters = len(list(text))
+    '''
+    Calculate characters per second (cps) of a subtitle.
+    The time parameters have format: HH:MM:SS.MMMMMM
+    '''
+    time_delta = (time_end-time_start).total_seconds() # srt library method
+    characters = len(text) - text.count(" ")
     cps = int(characters/time_delta)
     return cps
 
@@ -89,7 +98,8 @@ def subtitles_fixer(subs_path):
     srt_cps_list = list()
     for e in srt_fix_list:
         cps = characters_per_second(e.start, e.end, e.content)
-        if cps < 19 and cps > 1:
+        print(e.start, e.end, e.content, cps)
+        if cps < 30 and cps > 1:
             srt_cps_list.append(e)
 
     output = srt.compose(srt_cps_list)
@@ -97,7 +107,6 @@ def subtitles_fixer(subs_path):
     file_name = subs_path.split(".")[0] + "_fixed.srt"
     with open(file_name, "w", encoding="utf8") as f:
         f.write(output)
-
 
 
 subs_top_path = "video_top.srt"

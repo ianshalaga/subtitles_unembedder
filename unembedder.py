@@ -4,6 +4,7 @@ from easyocr.easyocr import Reader
 from termcolor import colored
 import numpy as np
 import srt
+# import subs_fixer as sf
 
 
 def time_to_hhmmssmmm(seconds_duration, input_type="miliseconds"):
@@ -235,10 +236,8 @@ def video_processing(video_path):
 def function_batch(videos_folder):
     return
 
-# video_path = "video.avi"
-# video_processing(video_path)
-# video_path = "video.mkv"
-# video_processing(video_path)
+video_path = "video.avi"
+video_processing(video_path)
 
 # image_path = "image.png"
 # image_processing(image_path)
