@@ -1,7 +1,9 @@
+from cv2 import meanStdDev
 import srt
 from fuzzywuzzy import fuzz
 from textblob import TextBlob
-
+import statistics as st
+from termcolor import colored
 
 def subtitles_joiner(subs_top_path, subs_bot_path):
     '''
@@ -22,7 +24,7 @@ def subtitles_joiner(subs_top_path, subs_bot_path):
     output = srt.compose(srt_list)
 
     # Save subtitle
-    output_path = "output_joined.srt"
+    output_path = "_".join(subs_top_path.split(".")[0].split("_")[:-3]) + "joined.srt"
     with open(output_path, "w", encoding="utf8") as f:
         f.write(output)
 
@@ -66,28 +68,14 @@ def subtitles_fixer(subs_path):
                     sub_idx = srt_no_empties_list[i].index
                 if sub_start == "":
                     sub_start = srt_no_empties_list[i].start
-                # cps = characters_per_second(srt_no_empties_list[i].start,
-                #                             srt_no_empties_list[i].end,
-                #                             srt_no_empties_list[i].content.strip())
-                # if cps < 19 and cps > 1:
                 contiguous_subs_list.append(str(TextBlob(srt_no_empties_list[i].content).correct()).strip())
             else:
-                # cps = characters_per_second(srt_no_empties_list[i].start,
-                #                             srt_no_empties_list[i].end,
-                #                             srt_no_empties_list[i].content.strip())
-                # if cps < 19 and cps > 1:
                 srt_fix_list.append(srt_no_empties_list[i])
         else:
             if sub_idx == "":
-                # cps = characters_per_second(srt_no_empties_list[i].start,
-                #                             srt_no_empties_list[i].end,
-                #                             srt_no_empties_list[i].content.strip())
-                # if cps < 19 and cps > 1:
                 srt_fix_list.append(srt_no_empties_list[i])
             else:
                 sub_end = srt_no_empties_list[i].end
-                # content = "\n".join(list(set(contiguous_subs_list)))
-                # sub = srt.Subtitle(sub_idx, sub_start, sub_end, content)
                 sub = srt.Subtitle(sub_idx, sub_start, sub_end, contiguous_subs_list[0])
                 srt_fix_list.append(sub)
                 sub_idx = ""
@@ -98,8 +86,7 @@ def subtitles_fixer(subs_path):
     srt_cps_list = list()
     for e in srt_fix_list:
         cps = characters_per_second(e.start, e.end, e.content)
-        print(e.start, e.end, e.content, cps)
-        if cps < 30 and cps > 1:
+        if cps < 50 and cps > 1:
             srt_cps_list.append(e)
 
     output = srt.compose(srt_cps_list)
@@ -109,11 +96,11 @@ def subtitles_fixer(subs_path):
         f.write(output)
 
 
-subs_top_path = "video_top.srt"
-subs_bot_path = "video_bot.srt"
-subtitles_fixer(subs_top_path)
-subtitles_fixer(subs_bot_path)
+# subs_top_path = "video_top.srt"
+# subs_bot_path = "video_bot.srt"
+# subtitles_fixer(subs_top_path)
+# subtitles_fixer(subs_bot_path)
 
-subs_top_path = "video_top_fixed.srt"
-subs_bot_path = "video_bot_fixed.srt"
-subtitles_joiner(subs_top_path, subs_bot_path)
+# subs_top_path = "video_top_fixed.srt"
+# subs_bot_path = "video_bot_fixed.srt"
+# subtitles_joiner(subs_top_path, subs_bot_path)
