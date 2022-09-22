@@ -8,6 +8,8 @@ from pathlib import Path
 import sys
 
 
+FIXED_SUFFIX = "_fixed.srt"
+
 def time_to_hhmmssmmm(seconds_duration, input_type="miliseconds"):
     '''
     Convert a time number into the string format HH:MM:SS:MMM
@@ -268,11 +270,21 @@ def video_processing(video_path):
     sf.subtitles_fixer(subtitles_top_path)
     sf.subtitles_fixer(subtitles_bot_path)
 
-    fixed = "_fixed.srt"
-    subtitles_top_fixed_path = subtitles_top_path.split(".")[0] + fixed
-    subtitles_bot_fixed_path = subtitles_bot_path.split(".")[0] + fixed   
+    subtitles_top_fixed_path = subtitles_top_path.split(".")[0] + FIXED_SUFFIX
+    subtitles_bot_fixed_path = subtitles_bot_path.split(".")[0] + FIXED_SUFFIX
 
     sf.subtitles_joiner(subtitles_top_fixed_path, subtitles_bot_fixed_path)
+
+
+def must_process(video, processed_path):
+    '''
+    Checks if a file must be processed:
+    - it's a video file -> for now only checks if it has an extension
+    - it's not already processed
+    '''
+    if video.is_dir() or not video.suffix:
+        return False
+    return not (processed_path / (video.stem + FIXED_SUFFIX)).exists()
 
 
 def video_processing_batch(videos_folder_path):
@@ -283,11 +295,10 @@ def video_processing_batch(videos_folder_path):
 
     # Listar todos los archivos de video en videos_folder
     for video in videos_folder.iterdir():
-        # check if video is a video...
-        video_processing(video)
+        if must_process(video, processed_path):
+            video_processing(video)
         # Colocar los videos listos en la carpeta de videos finalizados
 
-    return
 
 # video_path = "video.avi"
 # video_processing(video_path)
