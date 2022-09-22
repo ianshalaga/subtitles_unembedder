@@ -1,0 +1,8 @@
+srt
+termcolor
+numpy
+fuzzywuzzy
+textblob
+easyocr==1.6.2
+opencv-python==4.5.4.60
+opencv-python-headless==4.5.4.60
