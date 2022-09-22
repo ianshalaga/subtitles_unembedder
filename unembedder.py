@@ -84,8 +84,11 @@ def video_processing(video_path):
     '''
     ocr_reader = easyocr.Reader(["en", "es"]) # EasyOCR reader: English and Español
 
-    subtitles_top_path = video_path.split(".")[0] + "_top.srt"
-    subtitles_bot_path = video_path.split(".")[0] + "_bot.srt"
+    print("Processing " + str(video_path) + "...")
+    subtitles_top_path = video_path.stem + "_top.srt"
+    subtitles_bot_path = video_path.stem + "_bot.srt"
+
+    video_path = str(video_path)
     with open(subtitles_top_path, "w", encoding="utf8") as f:
         f.write("")
     with open(subtitles_bot_path, "w", encoding="utf8") as f:
@@ -118,6 +121,7 @@ def video_processing(video_path):
 
     srt_count_top = 0
     frames_accum_top = np.zeros(previous_frame_top_processed.shape, dtype=np.float32)
+    similarity = 0
     similarity_count_top = 0
     srt_count_bot = 0
     frames_accum_bot = np.zeros(previous_frame_bot_processed.shape, dtype=np.float32)
