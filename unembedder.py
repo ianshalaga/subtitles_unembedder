@@ -5,7 +5,7 @@ from termcolor import colored
 import numpy as np
 import subs_fixer as sf
 from pathlib import Path
-import os
+import sys
 
 
 def time_to_hhmmssmmm(seconds_duration, input_type="miliseconds"):
@@ -277,22 +277,26 @@ def video_processing(video_path):
 
 def video_processing_batch(videos_folder_path):
     # Create processed videos folder if it doesn't exist
-    processed_path = os.path.join(videos_folder_path, "processed")
-    Path(processed_path).mkdir(parents=True, exist_ok=True)
-    
-    # Listar todos los archivos de video en videos_folder
     videos_folder = Path(videos_folder_path)
+    processed_path = videos_folder / "processed"
+    processed_path.mkdir(parents=True, exist_ok=True)
+
+    # Listar todos los archivos de video en videos_folder
     for video in videos_folder.iterdir():
+        # check if video is a video...
         video_processing(video)
         # Colocar los videos listos en la carpeta de videos finalizados
-        
+
     return
 
 # video_path = "video.avi"
 # video_processing(video_path)
 
-videos_folder_path = "./"
-video_processing_batch(videos_folder_path)
-
 # image_path = "image.png"
 # image_processing(image_path)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        exit("Usage: {} videos_folder_path".format(sys.argv[0]))
+    videos_folder_path = sys.argv[1]
+    video_processing_batch(videos_folder_path)
