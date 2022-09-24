@@ -5,9 +5,9 @@ from textblob import TextBlob
 import statistics as st
 from termcolor import colored
 
-def subtitles_joiner(subs_top_path, subs_bot_path):
+def subtitles_joiner(subs_top_path, subs_bot_path, output_path):
     '''
-    Join subtitles of top and bottom.
+    Join subtitles of top and bottom. Output result in output_path.
     '''
     # Load Subtitles
     srt_top = ""
@@ -24,7 +24,6 @@ def subtitles_joiner(subs_top_path, subs_bot_path):
     output = srt.compose(srt_list)
 
     # Save subtitle
-    output_path = "_".join(subs_top_path.split(".")[0].split("_")[:-3]) + "joined.srt"
     with open(output_path, "w", encoding="utf8") as f:
         f.write(output)
 
@@ -41,6 +40,9 @@ def characters_per_second(time_start, time_end, text):
 
 
 def subtitles_fixer(subs_path):
+    '''
+    Fixes input subtitles in subs_path and outputs fixed ones in same folder with "_fixed" suffix.
+    '''
     srt_bot = ""
     with open(subs_path, "r", encoding="utf8") as f:
         srt_bot = f.read()
@@ -91,9 +93,11 @@ def subtitles_fixer(subs_path):
 
     output = srt.compose(srt_cps_list)
 
-    file_name = subs_path.split(".")[0] + "_fixed.srt"
-    with open(file_name, "w", encoding="utf8") as f:
+    output_file = subs_path.parent / (subs_path.stem + "_fixed.srt")
+    with open(output_file, "w", encoding="utf8") as f:
         f.write(output)
+    
+    return output_file
 
 
 # subs_top_path = "video_top.srt"

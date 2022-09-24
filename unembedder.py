@@ -1,14 +1,12 @@
-import easyocr
 import cv2
-from easyocr.easyocr import Reader
-from termcolor import colored
+import easyocr
+import mimetypes
 import numpy as np
 import subs_fixer as sf
-from pathlib import Path
 import sys
+from termcolor import colored
+from pathlib import Path
 
-
-FIXED_SUFFIX = "_fixed.srt"
 
 def time_to_hhmmssmmm(seconds_duration, input_type="miliseconds"):
     '''
@@ -77,7 +75,7 @@ def frame_processing(cv_frame):
     return image_avg
 
 
-def video_processing(video_path):
+def video_processing(video_path, processed_path):
     '''
     Extract subtitles of a video file into two srt files,
     one for top subtitles and one for bottom subtitles.
@@ -85,8 +83,9 @@ def video_processing(video_path):
     ocr_reader = easyocr.Reader(["en", "es"]) # EasyOCR reader: English and Español
 
     print("Processing " + str(video_path) + "...")
-    subtitles_top_path = video_path.stem + "_top.srt"
-    subtitles_bot_path = video_path.stem + "_bot.srt"
+    subtitles_top_path = processed_path / (video_path.stem + "_top.srt")
+    subtitles_bot_path = processed_path / (video_path.stem + "_bot.srt")
+    final_subs_path = processed_path / (video_path.stem + "_final.srt")
 
     video_path = str(video_path)
     with open(subtitles_top_path, "w", encoding="utf8") as f:
@@ -271,24 +270,24 @@ def video_processing(video_path):
             f.write(time + "\n" + srt_text + "\n\n")
 
     # Subtitles post processing
-    sf.subtitles_fixer(subtitles_top_path)
-    sf.subtitles_fixer(subtitles_bot_path)
+    subtitles_top_fixed = sf.subtitles_fixer(subtitles_top_path)
+    subtitles_bot_fixed = sf.subtitles_fixer(subtitles_bot_path)
 
-    subtitles_top_fixed_path = subtitles_top_path.split(".")[0] + FIXED_SUFFIX
-    subtitles_bot_fixed_path = subtitles_bot_path.split(".")[0] + FIXED_SUFFIX
-
-    sf.subtitles_joiner(subtitles_top_fixed_path, subtitles_bot_fixed_path)
+    sf.subtitles_joiner(subtitles_top_fixed, subtitles_bot_fixed, final_subs_path)
 
 
 def must_process(video, processed_path):
     '''
     Checks if a file must be processed:
-    - it's a video file -> for now only checks if it has an extension
+    - it's a video file
     - it's not already processed
     '''
-    if video.is_dir() or not video.suffix:
-        return False
-    return not (processed_path / (video.stem + FIXED_SUFFIX)).exists()
+    t, _ = mimetypes.guess_type(video)
+    is_video = t and "video" in t
+    is_processed = (processed_path / (video.stem + "_final.srt")).exists()
+    if is_processed:
+        print(colored("{} already processed, skiping.".format(video.name), "yellow"))
+    return is_video and not is_processed
 
 
 def video_processing_batch(videos_folder_path):
@@ -297,11 +296,10 @@ def video_processing_batch(videos_folder_path):
     processed_path = videos_folder / "processed"
     processed_path.mkdir(parents=True, exist_ok=True)
 
-    # Listar todos los archivos de video en videos_folder
-    for video in videos_folder.iterdir():
+    # Process all video files in videos_folder
+    for video in filter(Path.is_file, videos_folder.iterdir()):
         if must_process(video, processed_path):
-            video_processing(video)
-        # Colocar los videos listos en la carpeta de videos finalizados
+            video_processing(video, processed_path)
 
 
 # video_path = "video.avi"
